@@ -62,7 +62,7 @@ end
 
 
 function compute(f::Function, args; workgroupSize=(), workgroupCount=(), shmem=())
-	cShader = get!(task_local_storage(), 
+	@tracepoint "fetchShader" cShader = get!(task_local_storage(), 
 			(f, :shader, eltype.(args), getSize.(args), workgroupSize, workgroupCount, shmem)) do
 				compileShader(f, args; 
 					workgroupSize=workgroupSize, 
@@ -75,7 +75,7 @@ function compute(f::Function, args; workgroupSize=(), workgroupCount=(), shmem=(
 	bindings = []
 
 	bindingCount = 0
-	for (_, arg) in enumerate(args)
+	@tracepoint "buildbindingLayouts" for (_, arg) in enumerate(args)
 		if typeof(arg) <: WgpuArray
 			bindingCount += 1
 			push!(bindingLayouts, 
@@ -90,7 +90,7 @@ function compute(f::Function, args; workgroupSize=(), workgroupCount=(), shmem=(
 
 	bindingCount = 0
 
-	for (_, arg) in enumerate(args)
+	@tracepoint "buildbindings" for (_, arg) in enumerate(args)
 		if typeof(arg) <: WgpuArray
 			bindingCount += 1
 			push!(bindings, 
@@ -104,15 +104,15 @@ function compute(f::Function, args; workgroupSize=(), workgroupCount=(), shmem=(
 		end
 	end
 
-	pipelineLayout = WGPUCore.createPipelineLayout(gpuDevice, "PipeLineLayout", bindingLayouts, bindings)
-	computeStage = WGPUCore.createComputeStage(cShader.internal[], f |> string)
-	computePipeline = WGPUCore.createComputePipeline(gpuDevice, "computePipeline", pipelineLayout, computeStage)
-	commandEncoder = WGPUCore.createCommandEncoder(gpuDevice, "Command Encoder")
-	computePass = WGPUCore.beginComputePass(commandEncoder)
-	WGPUCore.setPipeline(computePass, computePipeline)
-	WGPUCore.setBindGroup(computePass, 0, pipelineLayout.bindGroup, UInt32[], 0, 99999)
-	WGPUCore.dispatchWorkGroups(computePass, workgroupCount...) # workgroup size needs work here
-	WGPUCore.endComputePass(computePass)
+	@tracepoint "pipelineLayout" pipelineLayout = WGPUCore.createPipelineLayout(gpuDevice, "PipeLineLayout", bindingLayouts, bindings)
+	@tracepoint "computeStage" computeStage = WGPUCore.createComputeStage(cShader.internal[], f |> string)
+	@tracepoint "computePipeline" computePipeline = WGPUCore.createComputePipeline(gpuDevice, "computePipeline", pipelineLayout, computeStage)
+	@tracepoint "cmdEncoder" commandEncoder = WGPUCore.createCommandEncoder(gpuDevice, "Command Encoder")
+	@tracepoint "computePass" computePass = WGPUCore.beginComputePass(commandEncoder)
+	@tracepoint "setpipeline" WGPUCore.setPipeline(computePass, computePipeline)
+	@tracepoint "setbindgroup" WGPUCore.setBindGroup(computePass, 0, pipelineLayout.bindGroup, UInt32[], 0, 9)
+	@tracepoint "dispatchWG" WGPUCore.dispatchWorkGroups(computePass, workgroupCount...) # workgroup size needs work here
+	@tracepoint "endcomputepass" WGPUCore.endComputePass(computePass)
 	@tracepoint "submit" WGPUCore.submit(gpuDevice.queue, [WGPUCore.finish(commandEncoder),])
 end
 

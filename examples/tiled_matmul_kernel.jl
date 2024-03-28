@@ -96,4 +96,4 @@ z_cpu = (x |> collect)*(y |> collect)
 
 @test z_cpu ≈ (z |> collect)
 
-task_local_storage() |> empty! # This is to recompile the kernel... Just a temporary hack
+#task_local_storage() |> empty! # This is to recompile the kernel... Just a temporary hack
