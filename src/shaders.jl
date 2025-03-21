@@ -9,15 +9,13 @@ struct ShaderObj
 	info
 end
 
-function createShaderObj(gpuDevice, shaderSource; savefile=false, debug = false)
-	shaderSource = shaderSource |> wgslCode 
-	@info shaderSource
-	shaderBytes  = shaderSource |> Vector{UInt8}
-
-	shaderInfo = WGPUCore.loadWGSL(shaderBytes)
+function createShaderObj(gpuDevice, shaderCode, shaderBuffer; savefile=false, debug = false)
+	seek(shaderBuffer, 0)
+	@info shaderCode
+	shaderInfo = WGPUCore.loadWGSL(read(shaderBuffer))
 
 	shaderObj = ShaderObj(
-		shaderSource,
+		shaderCode,
 		WGPUCore.createShaderModule(
 			gpuDevice,
 			"shaderCode",
@@ -37,7 +35,7 @@ function createShaderObj(gpuDevice, shaderSource; savefile=false, debug = false)
 		try
 			run(`naga scratch.wgsl`)
 		catch(e)
-			@info shaderSource
+			@info shaderCode
 			rethrow(e)
 		end
 	end

@@ -57,9 +57,12 @@ end
 
 function compileShader(f, args; workgroupSize=(), workgroupCount=(), shmem=())
 	shaderSrc = getShaderCode(f, args; workgroupSize=workgroupSize, workgroupCount=workgroupCount, shmem=shmem)
+	shaderBuffer = IOBuffer()
+	write(shaderBuffer, (shaderSrc |> wgslCode))
+	seek(shaderBuffer, 0)
 	cShader = nothing
 	try
-		cShader = createShaderObj(WGPUCompute.getWgpuDevice(), shaderSrc; savefile=true)
+		cShader = createShaderObj(WGPUCompute.getWgpuDevice(), shaderSrc |> wgslCode, shaderBuffer; savefile=true)
 	catch(e)
 		@info e
 		rethrow(e)
